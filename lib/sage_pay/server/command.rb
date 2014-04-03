@@ -7,7 +7,7 @@ module SagePay
 
       self.vps_protocol = "2.23"
 
-      attr_accessor :mode, :vendor, :vendor_tx_code
+      attr_accessor :mode, :vendor, :vendor_tx_code, :http_proxy
 
       validates_presence_of :vps_protocol, :mode, :tx_type, :vendor,
         :vendor_tx_code
@@ -80,8 +80,16 @@ module SagePay
         parsed_uri = URI.parse(url)
         request = Net::HTTP::Post.new(parsed_uri.request_uri)
         request.form_data = post_params
+        
+        if http_proxy
+          uri = URI.parse(http_proxy)
+          proxy_user, proxy_pass = uri.userinfo.split(/:/) if uri.userinfo
+          http_client = Net::HTTP::Proxy(uri.host, uri.port, proxy_user, proxy_pass)
+        else
+          http_client = Net::HTTP
+        end
 
-        http = Net::HTTP.new(parsed_uri.host, parsed_uri.port)
+        http = http_client.new(parsed_uri.host, parsed_uri.port)
 
         if parsed_uri.scheme == "https"
           http.use_ssl = true
